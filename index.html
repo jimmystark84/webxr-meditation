@@ -2,82 +2,101 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Milky Way: Realistic Rebirth</title>
+    <title>Milky Way: Infinite Spectrum</title>
     <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
     <script>
-      // 1. IMPROVED UNIVERSE ENGINE
       AFRAME.registerComponent('universe-engine', {
         init: function () {
-          this.colors = [
-            {glow: '#00f2ff', metal: 1, rough: 0.1}, // Icy Quartz
-            {glow: '#ff4500', metal: 0.8, rough: 0.4}, // Solar Amber
-            {glow: '#ffffff', metal: 1, rough: 0}     // Diamond
-          ];
-          this.currentPalette = 0;
           this.generateWorld();
-          
-          // Using a more reliable loop for the Supernova
           this.timer = 0;
         },
 
         tick: function (t, dt) {
           this.timer += dt;
-          if (this.timer >= 60000) { // Reset every 60 seconds
+          if (this.timer >= 60000) { // Supernova every 60 seconds
             this.timer = 0;
             this.triggerSupernova();
           }
         },
 
+        // This function now creates a totally unique color for every cluster
+        getRandomColor: function() {
+          // Generates a random Hue (0-360) with high Saturation and Lightness for that "neon" look
+          const h = Math.floor(Math.random() * 360);
+          return `hsl(${h}, 100%, 70%)`;
+        },
+
         generateWorld: function () {
-          const palette = this.colors[this.currentPalette];
           const sceneEl = this.el;
           
-          // Clean up old clusters
+          // Clear the old universe
           document.querySelectorAll('.cluster').forEach(c => c.parentNode.removeChild(c));
 
           for (let i = 0; i < 120; i++) {
             let cluster = document.createElement('a-entity');
             cluster.classList.add('cluster');
             
-            // Build more irregular, realistic shards
+            // Pick ONE random color for this specific cluster
+            const clusterColor = this.getRandomColor();
+
             for (let j = 0; j < 5; j++) {
               let shard = document.createElement('a-entity');
               shard.setAttribute('geometry', {
                 primitive: 'octahedron',
                 detail: 0
               });
-              shard.setAttribute('scale', `${Math.random()*0.5 + 0.2} ${Math.random()*3 + 1} ${Math.random()*0.5 + 0.2}`);
+              
+              // More realistic, jagged scaling
+              shard.setAttribute('scale', `${Math.random()*0.4 + 0.2} ${Math.random()*2.5 + 1} ${Math.random()*0.4 + 0.2}`);
               shard.setAttribute('rotation', {x: Math.random()*360, y: Math.random()*360, z: Math.random()*360});
               
               shard.setAttribute('material', {
-                color: palette.glow,
-                emissive: palette.glow,
-                emissiveIntensity: 0.5,
-                metalness: palette.metal,
-                roughness: palette.rough,
-                sphericalEnvMap: '#milkyway' // Makes crystals reflect the sky
+                color: clusterColor,
+                emissive: clusterColor,
+                emissiveIntensity: 0.8,
+                metalness: 0.9,
+                roughness: 0.1,
+                sphericalEnvMap: '#milkyway' // Reflects your background image
               });
               cluster.appendChild(shard);
             }
 
-            cluster.setAttribute('position', {x: (Math.random()-0.5)*140, y: (Math.random()-0.5)*140, z: (Math.random()*-250)});
-            cluster.setAttribute('animation', {property: 'rotation', to: '360 360 360', loop: true, dur: 40000, easing: 'linear'});
+            cluster.setAttribute('position', {
+              x: (Math.random()-0.5)*150, 
+              y: (Math.random()-0.5)*150, 
+              z: (Math.random()*-250)
+            });
+
+            // Random rotation speed for each cluster
+            cluster.setAttribute('animation', {
+              property: 'rotation', 
+              to: '360 360 360', 
+              loop: true, 
+              dur: 20000 + Math.random() * 40000, 
+              easing: 'linear'
+            });
+
             sceneEl.appendChild(cluster);
           }
         },
 
         triggerSupernova: function () {
           const flash = document.querySelector('#flash');
-          // Phase 1: The Build Up
-          flash.setAttribute('animation', {property: 'material.opacity', from: 0, to: 1, dur: 3000, easing: 'easeInSine'});
+          if (!flash) return;
+
+          // Blinding white flash
+          flash.setAttribute('animation', {
+            property: 'material.opacity', 
+            from: 0, to: 1, dur: 2500, easing: 'easeInQuad'
+          });
           
-          // Phase 2: The Swap (happens when fully white)
           setTimeout(() => {
-            this.currentPalette = (this.currentPalette + 1) % this.colors.length;
-            this.generateWorld();
-            // Phase 3: The Fade Out
-            flash.setAttribute('animation', {property: 'material.opacity', from: 1, to: 0, dur: 5000, easing: 'easeOutSine'});
-          }, 3100);
+            this.generateWorld(); // The new random colors are born here
+            flash.setAttribute('animation', {
+              property: 'material.opacity', 
+              from: 1, to: 0, dur: 4500, easing: 'easeOutQuad'
+            });
+          }, 2600);
         }
       });
     </script>
@@ -88,18 +107,18 @@
         <img id="milkyway" src="milkyway.jpg" crossorigin="anonymous">
       </a-assets>
 
-      <a-sphere id="flash" radius="5" material="color: white; shader: flat; side: double; opacity: 0; transparent: true" position="0 1.6 0"></a-sphere>
+      <a-sphere id="flash" radius="10" material="color: white; shader: flat; side: double; opacity: 0; transparent: true" position="0 1.6 0"></a-sphere>
 
       <a-sky src="#milkyway" rotation="0 -90 0"></a-sky>
 
-      <a-entity starsystem="count: 12000; radius: 250; color: #FFF; depth: 300"></a-entity>
+      <a-entity starsystem="count: 10000; radius: 250; color: #FFF; depth: 300"></a-entity>
 
       <a-entity id="rig" position="0 0 0" animation="property: position; to: 0 0 -5000; dur: 800000; easing: linear">
         <a-camera look-controls fov="80"></a-camera>
       </a-entity>
 
-      <a-light type="directional" intensity="1.5" position="1 2 1" target="#rig"></a-light>
-      <a-light type="ambient" intensity="0.3"></a-light>
+      <a-light type="directional" intensity="1.5" position="2 4 2" target="#rig"></a-light>
+      <a-light type="ambient" intensity="0.4"></a-light>
 
     </a-scene>
   </body>

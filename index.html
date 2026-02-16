@@ -2,9 +2,33 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Milky Way: Infinite Spectrum</title>
+    <title>Milky Way: Realistic Asteroids</title>
     <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
     <script>
+      // COMPONENT: Creates the "Craters" and rough texture procedurally
+      AFRAME.registerComponent('asteroid-geometry', {
+        init: function () {
+          const mesh = this.el.getObject3D('mesh');
+          if (!mesh) return;
+
+          // We grab the vertices of the shape and "perturb" them
+          const positionAttribute = mesh.geometry.getAttribute('position');
+          const vertex = new THREE.Vector3();
+
+          for (let i = 0; i < positionAttribute.count; i++) {
+            vertex.fromBufferAttribute(positionAttribute, i);
+            
+            // This math creates random "bumps" and "divots" (craters)
+            const noise = (Math.random() - 0.5) * 0.4; 
+            vertex.multiplyScalar(1 + noise);
+            
+            positionAttribute.setXYZ(i, vertex.x, vertex.y, vertex.z);
+          }
+          positionAttribute.needsUpdate = true;
+          mesh.geometry.computeVertexNormals(); // Fixes the lighting for the new bumps
+        }
+      });
+
       AFRAME.registerComponent('universe-engine', {
         init: function () {
           this.generateWorld();
@@ -13,112 +37,86 @@
 
         tick: function (t, dt) {
           this.timer += dt;
-          if (this.timer >= 60000) { // Supernova every 60 seconds
+          if (this.timer >= 60000) { 
             this.timer = 0;
             this.triggerSupernova();
           }
         },
 
-        // This function now creates a totally unique color for every cluster
-        getRandomColor: function() {
-          // Generates a random Hue (0-360) with high Saturation and Lightness for that "neon" look
-          const h = Math.floor(Math.random() * 360);
-          return `hsl(${h}, 100%, 70%)`;
-        },
-
         generateWorld: function () {
           const sceneEl = this.el;
-          
-          // Clear the old universe
-          document.querySelectorAll('.cluster').forEach(c => c.parentNode.removeChild(c));
+          document.querySelectorAll('.asteroid').forEach(c => c.parentNode.removeChild(c));
 
-          for (let i = 0; i < 120; i++) {
-            let cluster = document.createElement('a-entity');
-            cluster.classList.add('cluster');
+          for (let i = 0; i < 80; i++) {
+            let rock = document.createElement('a-entity');
+            rock.classList.add('asteroid');
             
-            // Pick ONE random color for this specific cluster
-            const clusterColor = this.getRandomColor();
-
-            for (let j = 0; j < 5; j++) {
-              let shard = document.createElement('a-entity');
-              shard.setAttribute('geometry', {
-                primitive: 'octahedron',
-                detail: 0
-              });
-              
-              // More realistic, jagged scaling
-              shard.setAttribute('scale', `${Math.random()*0.4 + 0.2} ${Math.random()*2.5 + 1} ${Math.random()*0.4 + 0.2}`);
-              shard.setAttribute('rotation', {x: Math.random()*360, y: Math.random()*360, z: Math.random()*360});
-              
-              shard.setAttribute('material', {
-                color: clusterColor,
-                emissive: clusterColor,
-                emissiveIntensity: 0.8,
-                metalness: 0.9,
-                roughness: 0.1,
-                sphericalEnvMap: '#milkyway' // Reflects your background image
-              });
-              cluster.appendChild(shard);
-            }
-
-            cluster.setAttribute('position', {
-              x: (Math.random()-0.5)*150, 
-              y: (Math.random()-0.5)*150, 
-              z: (Math.random()*-250)
+            // Use Icosahedron with detail:2 for enough "resolution" to see craters
+            rock.setAttribute('geometry', {
+              primitive: 'icosahedron',
+              radius: Math.random() * 2 + 1,
+              detail: 2 
             });
 
-            // Random rotation speed for each cluster
-            cluster.setAttribute('animation', {
+            // Apply our custom "Crater" math
+            rock.setAttribute('asteroid-geometry', '');
+
+            // Material inspired by your image: Dark grey, very rough
+            rock.setAttribute('material', {
+              color: '#333333',
+              roughness: 1.0, 
+              metalness: 0.0,
+              sphericalEnvMap: '#milkyway',
+              envMapIntensity: 0.2 // Very subtle star reflections
+            });
+
+            rock.setAttribute('position', {
+              x: (Math.random()-0.5)*180, 
+              y: (Math.random()-0.5)*120, 
+              z: (Math.random()*-300)
+            });
+
+            // Random tumbling
+            rock.setAttribute('animation', {
               property: 'rotation', 
-              to: '360 360 360', 
+              to: `${Math.random()*360} 360 ${Math.random()*360}`, 
               loop: true, 
-              dur: 20000 + Math.random() * 40000, 
+              dur: 50000 + Math.random() * 50000, 
               easing: 'linear'
             });
 
-            sceneEl.appendChild(cluster);
+            sceneEl.appendChild(rock);
           }
         },
 
         triggerSupernova: function () {
           const flash = document.querySelector('#flash');
           if (!flash) return;
-
-          // Blinding white flash
-          flash.setAttribute('animation', {
-            property: 'material.opacity', 
-            from: 0, to: 1, dur: 2500, easing: 'easeInQuad'
-          });
-          
+          flash.setAttribute('animation', {property: 'material.opacity', from: 0, to: 1, dur: 2000});
           setTimeout(() => {
-            this.generateWorld(); // The new random colors are born here
-            flash.setAttribute('animation', {
-              property: 'material.opacity', 
-              from: 1, to: 0, dur: 4500, easing: 'easeOutQuad'
-            });
-          }, 2600);
+            this.generateWorld();
+            flash.setAttribute('animation', {property: 'material.opacity', from: 1, to: 0, dur: 4000});
+          }, 2100);
         }
       });
     </script>
   </head>
   <body>
-    <a-scene universe-engine renderer="colorManagement: true; exposure: 1.2; bloom: true;">
+    <a-scene universe-engine renderer="colorManagement: true; exposure: 1.0;">
       <a-assets>
         <img id="milkyway" src="milkyway.jpg" crossorigin="anonymous">
       </a-assets>
 
-      <a-sphere id="flash" radius="10" material="color: white; shader: flat; side: double; opacity: 0; transparent: true" position="0 1.6 0"></a-sphere>
+      <a-sphere id="flash" radius="15" material="color: white; shader: flat; side: double; opacity: 0; transparent: true" position="0 1.6 0"></a-sphere>
 
       <a-sky src="#milkyway" rotation="0 -90 0"></a-sky>
 
-      <a-entity starsystem="count: 10000; radius: 250; color: #FFF; depth: 300"></a-entity>
-
-      <a-entity id="rig" position="0 0 0" animation="property: position; to: 0 0 -5000; dur: 800000; easing: linear">
+      <a-entity id="rig" position="0 0 0" animation="property: position; to: 0 0 -10000; dur: 1200000; easing: linear">
         <a-camera look-controls fov="80"></a-camera>
       </a-entity>
 
-      <a-light type="directional" intensity="1.5" position="2 4 2" target="#rig"></a-light>
-      <a-light type="ambient" intensity="0.4"></a-light>
+      <a-light type="directional" intensity="2.5" position="-10 10 5" target="#rig"></a-light>
+      <a-light type="ambient" intensity="0.1" color="#1a1a33"></a-light>
 
     </a-scene>
   </body>

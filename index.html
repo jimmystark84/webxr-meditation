@@ -2,25 +2,24 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Infinite Crystal Clusters</title>
+    <title>Milky Way Crystal Voyage</title>
     <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
     <script>
-      // COMPONENT: Creates the detailed crystal clusters you saw in the image
-      AFRAME.registerComponent('crystal-clusters', {
+      // Detailed Cluster Logic
+      AFRAME.registerComponent('milky-way-clusters', {
         init: function () {
           const sceneEl = this.el;
-          const clusterCount = 35; 
-          const colors = ['#00f2ff', '#7000ff', '#ff007b', '#b0fbff'];
+          const clusterCount = 180; // Ultra high density
+          const colors = ['#00f2ff', '#7000ff', '#ff007b', '#ffffff', '#ff9d00'];
 
           for (let i = 0; i < clusterCount; i++) {
             let clusterWrap = document.createElement('a-entity');
             
-            // Build the "Detailed" look by grouping 6 shards together
-            for (let j = 0; j < 6; j++) {
+            for (let j = 0; j < 8; j++) {
               let shard = document.createElement('a-cone');
-              shard.setAttribute('radius-bottom', Math.random() * 0.4 + 0.1);
-              shard.setAttribute('height', Math.random() * 2 + 1);
-              shard.setAttribute('segments-radial', 4);
+              shard.setAttribute('radius-bottom', Math.random() * 0.5 + 0.2);
+              shard.setAttribute('height', Math.random() * 5 + 1);
+              shard.setAttribute('segments-radial', 6);
               shard.setAttribute('rotation', {
                 x: Math.random() * 360, y: Math.random() * 360, z: Math.random() * 360
               });
@@ -29,37 +28,27 @@
               shard.setAttribute('material', {
                 color: col,
                 emissive: col,
-                emissiveIntensity: 0.8,
-                opacity: 0.7,
+                emissiveIntensity: 1.5,
+                metalness: 1,
+                roughness: 0.1,
                 transparent: true,
-                metalness: 1
+                opacity: 0.7
               });
-              
-              // Add a "Breathing" pulse effect to each shard
-              shard.setAttribute('animation__pulse', {
-                property: 'material.emissiveIntensity',
-                from: 0.4,
-                to: 1.5,
-                dur: 2000 + Math.random() * 3000,
-                dir: 'alternate',
-                loop: true
-              });
-
               clusterWrap.appendChild(shard);
             }
 
+            // Scatter clusters along a deep Z-axis
             clusterWrap.setAttribute('position', {
-              x: (Math.random() - 0.5) * 60,
-              y: (Math.random() - 0.5) * 60,
-              z: (Math.random() - 0.5) * 60
+              x: (Math.random() - 0.5) * 150,
+              y: (Math.random() - 0.5) * 150,
+              z: (Math.random() * -300) + 50
             });
 
-            // Spin the whole cluster like a kaleidoscope
-            clusterWrap.setAttribute('animation__rotate', {
+            clusterWrap.setAttribute('animation', {
               property: 'rotation',
               to: '360 360 360',
               loop: true,
-              dur: 30000 + Math.random() * 20000,
+              dur: 15000 + Math.random() * 20000,
               easing: 'linear'
             });
 
@@ -68,56 +57,41 @@
         }
       });
 
-      // COMPONENT: Keeps the world infinite by wrapping objects
-      AFRAME.registerComponent('infinite-loop', {
+      // Infinite Space Loop
+      AFRAME.registerComponent('space-loop', {
         tick: function () {
           const camPos = document.querySelector('#rig').object3D.position;
           this.el.childNodes.forEach(child => {
-            if (child.object3D) {
-                let dist = child.object3D.position.distanceTo(camPos);
-                if (dist > 50) {
-                    // Reposition far ahead of the player
-                    child.setAttribute('position', {
-                        x: camPos.x + (Math.random() - 0.5) * 80,
-                        y: camPos.y + (Math.random() - 0.5) * 80,
-                        z: camPos.z + (Math.random() - 0.5) * 80
-                    });
-                }
+            if (child.object3D && child.object3D.position.z > camPos.z + 30) {
+                child.object3D.position.z = camPos.z - 250;
+                child.object3D.position.x = (Math.random() - 0.5) * 150;
+                child.object3D.position.y = (Math.random() - 0.5) * 150;
             }
-          });
-        }
-      });
-
-      // COMPONENT: The gentle forward drift
-      AFRAME.registerComponent('drift', {
-        tick: function() {
-          let pos = this.el.getAttribute('position');
-          let direction = new THREE.Vector3(0, 0, -1);
-          this.el.object3D.getWorldDirection(direction);
-          this.el.setAttribute('position', {
-            x: pos.x + (direction.x * -0.015),
-            y: pos.y + (direction.y * -0.015),
-            z: pos.z + (direction.z * -0.015)
           });
         }
       });
     </script>
   </head>
   <body>
-    <a-scene crystal-clusters infinite-loop renderer="antialias: false" background="color: #020205">
+    <a-scene milky-way-clusters space-loop renderer="colorManagement: true; exposure: 1.2;">
       
-      <a-entity id="rig" drift position="0 0 0">
+      <a-assets>
+        <img id="milkyway" src="https://cdn.glitch.global/605e2a51-d45f-4d87-a285-9410ad350515/milkyway.jpg?v=1642610115682">
+      </a-assets>
+
+      <a-sky src="#milkyway" rotation="0 -90 0" animation="property: rotation; to: 0 270 0; dur: 500000; loop: true; easing: linear"></a-sky>
+
+      <a-entity starsystem="count: 10000; radius: 250; color: #FFF; depth: 300"></a-entity>
+
+      <a-entity id="rig" position="0 0 0" animation="property: position; to: 0 0 -10000; dur: 1000000; easing: linear">
         <a-camera look-controls></a-camera>
         <a-entity oculus-touch-controls="hand: left"></a-entity>
         <a-entity oculus-touch-controls="hand: right"></a-entity>
       </a-entity>
 
-      <a-entity animation="property: rotation; to: 0 360 360; loop: true; dur: 200000; easing: linear">
-        <a-sky color="#050510" radius="100"></a-sky>
-        <a-stars count="5000" radius="95" color="#FFF"></a-stars>
-      </a-entity>
+      <a-light type="ambient" intensity="0.4" color="#4c566a"></a-light>
+      <a-light type="point" intensity="2" position="0 0 -5" distance="50" color="#fff"></a-light>
 
-      <a-light type="ambient" intensity="0.3"></a-light>
     </a-scene>
   </body>
 </html>

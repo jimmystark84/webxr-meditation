@@ -98,13 +98,16 @@
   <body>
     <a-scene universe-engine infinite-vortex renderer="bloom: true; exposure: 2.0; antialias: true;">
       
-      <a-assets>
-        <img id="milkyway" src="https://cdn.glitch.global/605e2a51-d45f-4d87-a285-9410ad350515/milkyway.jpg?v=1642610115682">
-      </a-assets>
+     <a-assets>
+  <img id="milkyway" src="milkyway.jpg" crossorigin="anonymous">
+</a-assets>
 
       <a-sphere id="flash" radius="2" material="color: white; shader: flat; side: double; opacity: 0; transparent: true" position="0 1.6 0"></a-sphere>
 
-      <a-sky src="#milkyway" animation="property: rotation; to: 360 360 0; dur: 800000; loop: true; easing: linear"></a-sky>
+   <a-sky src="#milkyway" 
+       rotation="0 -90 0" 
+       animation="property: rotation; to: 0 270 0; dur: 500000; loop: true; easing: linear">
+</a-sky>
 
       <a-entity animation="property: rotation; to: 0 360 0; dur: 100000; loop: true; easing: linear">
         <a-stars count="15000" radius="200" color="#fff"></a-stars>

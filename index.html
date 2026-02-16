@@ -98,15 +98,18 @@
   <body>
     <a-scene universe-engine infinite-vortex renderer="bloom: true; exposure: 2.0; antialias: true;">
       
-     <a-assets>
-  <img id="milkyway" src="milkyway.jpg" crossorigin="anonymous">
+ <a-assets>
+  <img id="milkyway" 
+       src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/60/ESO_-_The_Milky_Way_panorama_%28by%29.jpg/1280px-ESO_-_The_Milky_Way_panorama_%28by%29.jpg" 
+       crossorigin="anonymous">
 </a-assets>
 
       <a-sphere id="flash" radius="2" material="color: white; shader: flat; side: double; opacity: 0; transparent: true" position="0 1.6 0"></a-sphere>
 
-   <a-sky src="#milkyway" 
+<a-sky src="#milkyway" 
+       color="#050510" 
        rotation="0 -90 0" 
-       animation="property: rotation; to: 0 270 0; dur: 500000; loop: true; easing: linear">
+       animation="property: rotation; to: 0 270 0; dur: 800000; loop: true; easing: linear">
 </a-sky>
 
       <a-entity animation="property: rotation; to: 0 360 0; dur: 100000; loop: true; easing: linear">

@@ -1,87 +1,151 @@
-<script>
-  // ... (keep universe-engine and warp-speed from previous code) ...
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Milky Way: Infinite Life</title>
+    <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
+    <script>
+      // 1. UNIVERSE ENGINE: Manages Crystal Clusters and Supernova
+      AFRAME.registerComponent('universe-engine', {
+        init: function () {
+          this.colors = [
+            ['#00f2ff', '#7000ff', '#ff007b'], // Neon
+            ['#ff9d00', '#ff4500', '#ffff00'], // Solar
+            ['#00ff8c', '#0044ff', '#ffffff']  // Deep Space
+          ];
+          this.currentPalette = 0;
+          this.generateWorld();
+          setInterval(() => this.triggerSupernova(), 90000); 
+        },
+        generateWorld: function () {
+          const palette = this.colors[this.currentPalette];
+          const old = document.querySelectorAll('.cluster');
+          old.forEach(c => c.parentNode.removeChild(c));
 
-  // NEW COMPONENT: Procedural Space Creatures
-  AFRAME.registerComponent('void-creature', {
-    init: function () {
-      this.time = 0;
-      this.speed = Math.random() * 0.05 + 0.02;
-      this.amplitude = Math.random() * 5 + 2;
-      
-      // Create a head and body segments
-      for (let i = 0; i < 8; i++) {
-        let segment = document.createElement('a-sphere');
-        segment.setAttribute('radius', 0.8 - (i * 0.08)); // Tapered tail
-        segment.setAttribute('position', {x: 0, y: 0, z: i * 1.5});
-        segment.setAttribute('material', {
-          color: '#ffffff',
-          emissive: '#00f2ff',
-          emissiveIntensity: 2,
-          transparent: true,
-          opacity: 0.6 - (i * 0.05)
-        });
-        segment.classList.add('creature-part');
-        this.el.appendChild(segment);
-      }
-    },
-
-    tick: function (t, dt) {
-      this.time += dt * 0.001;
-      let pos = this.el.getAttribute('position');
-      
-      // Swim in a wavy, serpentine path
-      pos.x += Math.sin(this.time * this.speed) * 0.1;
-      pos.y += Math.cos(this.time * this.speed * 0.5) * 0.05;
-      pos.z += 0.05; // Slowly drift forward
-
-      // If they go too far behind, reset them deep in the galaxy
-      if (pos.z > 50) pos.z = -250;
-      
-      this.el.setAttribute('position', pos);
-
-      // Undulate the body segments for a "swimming" effect
-      const segments = this.el.querySelectorAll('.creature-part');
-      segments.forEach((seg, i) => {
-        let wave = Math.sin((this.time * 3) - (i * 0.5)) * 0.5;
-        seg.setAttribute('position', {x: wave, y: wave * 0.5, z: i * 1.2});
+          for (let i = 0; i < 150; i++) {
+            let cluster = document.createElement('a-entity');
+            cluster.classList.add('cluster');
+            for (let j = 0; j < 6; j++) {
+              let shard = document.createElement('a-cone');
+              shard.setAttribute('radius-bottom', 0.3);
+              shard.setAttribute('height', 2.5);
+              shard.setAttribute('segments-radial', 6);
+              shard.setAttribute('rotation', {x: Math.random()*360, y: Math.random()*360, z: Math.random()*360});
+              let col = palette[Math.floor(Math.random() * palette.length)];
+              shard.setAttribute('material', {
+                color: col, emissive: col, emissiveIntensity: 2, 
+                metalness: 1, roughness: 0.1, transparent: true, opacity: 0.8
+              });
+              cluster.appendChild(shard);
+            }
+            cluster.setAttribute('position', {x: (Math.random()-0.5)*150, y: (Math.random()-0.5)*150, z: (Math.random()*-300)});
+            cluster.setAttribute('animation', {property: 'rotation', to: '360 720 360', loop: true, dur: 25000, easing: 'linear'});
+            this.el.appendChild(cluster);
+          }
+        },
+        triggerSupernova: function () {
+          const flash = document.querySelector('#flash');
+          if (flash) {
+            flash.setAttribute('animation', {property: 'material.opacity', from: 0, to: 1, dur: 2000});
+            setTimeout(() => {
+              this.currentPalette = (this.currentPalette + 1) % this.colors.length;
+              this.generateWorld();
+              flash.setAttribute('animation', {property: 'material.opacity', from: 1, to: 0, dur: 4000});
+            }, 2500);
+          }
+        }
       });
-    }
-  });
 
-  // Update Universe Engine to also spawn creatures
-  AFRAME.registerComponent('spawn-life', {
-    init: function() {
-      for(let i=0; i<10; i++) {
-        let creature = document.createElement('a-entity');
-        creature.setAttribute('void-creature', '');
-        creature.setAttribute('position', {
-          x: (Math.random()-0.5)*100, 
-          y: (Math.random()-0.5)*100, 
-          z: Math.random()*-200
-        });
-        this.el.appendChild(creature);
-      }
-    }
-  });
-</script>
+      // 2. VOID CREATURE: Sinusoidal movement logic
+      AFRAME.registerComponent('void-creature', {
+        init: function () {
+          this.time = 0;
+          this.speed = Math.random() * 0.05 + 0.02;
+          // Create body segments
+          for (let i = 0; i < 8; i++) {
+            let segment = document.createElement('a-sphere');
+            segment.setAttribute('radius', 0.8 - (i * 0.08));
+            segment.setAttribute('material', {
+              color: '#ffffff', emissive: '#00f2ff', emissiveIntensity: 2, transparent: true, opacity: 0.6 - (i * 0.05)
+            });
+            segment.classList.add('creature-part');
+            this.el.appendChild(segment);
+          }
+        },
+        tick: function (t, dt) {
+          this.time += dt * 0.001;
+          let pos = this.el.getAttribute('position');
+          pos.x += Math.sin(this.time * this.speed) * 0.1;
+          pos.y += Math.cos(this.time * this.speed * 0.5) * 0.05;
+          pos.z += 0.08; 
+          if (pos.z > 50) pos.z = -250;
+          this.el.setAttribute('position', pos);
 
-<body>
-  <a-scene universe-engine warp-speed spawn-life renderer="bloom: true; exposure: 1.5;">
-    
-    <a-assets>
-      <img id="milkyway" src="milkyway.jpg" crossorigin="anonymous">
-    </a-assets>
+          const segments = this.el.querySelectorAll('.creature-part');
+          segments.forEach((seg, i) => {
+            let wave = Math.sin((this.time * 3) - (i * 0.5)) * 0.5;
+            seg.setAttribute('position', {x: wave, y: wave * 0.5, z: i * 1.2});
+          });
+        }
+      });
 
-    <a-sphere id="flash" radius="0.5" material="color: white; shader: flat; opacity: 0; transparent: true" position="0 1.6 0"></a-sphere>
+      // 3. SPAWN LIFE: Initial population
+      AFRAME.registerComponent('spawn-life', {
+        init: function() {
+          for(let i=0; i<12; i++) {
+            let creature = document.createElement('a-entity');
+            creature.setAttribute('void-creature', '');
+            creature.setAttribute('position', {
+              x: (Math.random()-0.5)*120, y: (Math.random()-0.5)*120, z: Math.random()*-250
+            });
+            this.el.appendChild(creature);
+          }
+        }
+      });
 
-    <a-sky src="#milkyway" rotation="0 -90 0" animation="property: rotation; to: 0 270 0; dur: 900000; loop: true; easing: linear"></a-sky>
+      // 4. WARP SPEED: Controller logic
+      AFRAME.registerComponent('warp-speed', {
+        init: function () {
+          const rig = document.querySelector('#rig');
+          const cam = document.querySelector('a-camera');
+          const controllers = document.querySelectorAll('[oculus-touch-controls]');
+          const startWarp = () => {
+            rig.setAttribute('animation', {property: 'position', to: '0 0 -50000', dur: 40000, easing: 'easeInQuad'});
+            cam.setAttribute('animation__fov', {property: 'fov', to: 130, dur: 800});
+          };
+          const stopWarp = () => {
+            rig.setAttribute('animation', {property: 'position', to: '0 0 -5000', dur: 500000, easing: 'easeOutQuad'});
+            cam.setAttribute('animation__fov', {property: 'fov', to: 80, dur: 1500});
+          };
+          controllers.forEach(c => {
+            c.addEventListener('triggerdown', startWarp);
+            c.addEventListener('triggerup', stopWarp);
+          });
+        }
+      });
+    </script>
+  </head>
+  <body>
+    <a-scene universe-engine spawn-life warp-speed renderer="colorManagement: true; exposure: 1.5; bloom: true;">
+      <a-assets>
+        <img id="milkyway" src="milkyway.jpg" crossorigin="anonymous">
+      </a-assets>
 
-    <a-entity id="rig" position="0 0 0" animation="property: position; to: 0 0 -5000; dur: 500000; easing: linear">
-      <a-camera look-controls fov="80"></a-camera>
-      <a-entity oculus-touch-controls="hand: left"></a-entity>
-      <a-entity oculus-touch-controls="hand: right"></a-entity>
-    </a-entity>
+      <a-sphere id="flash" radius="0.5" material="color: white; shader: flat; side: double; opacity: 0; transparent: true" position="0 1.6 0"></a-sphere>
 
-    <a-light type="ambient" intensity="0.6"></a-light>
-  </a-scene>
-</body>
+      <a-sky src="#milkyway" rotation="0 -90 0" animation="property: rotation; to: 0 270 0; dur: 900000; loop: true; easing: linear"></a-sky>
+
+      <a-entity animation="property: rotation; to: 0 360 360; dur: 200000; loop: true; easing: linear">
+        <a-stars count="8000" radius="250" color="#FFF"></a-stars>
+      </a-entity>
+
+      <a-entity id="rig" position="0 0 0" animation="property: position; to: 0 0 -5000; dur: 500000; easing: linear">
+        <a-camera look-controls fov="80"></a-camera>
+        <a-entity oculus-touch-controls="hand: left"></a-entity>
+        <a-entity oculus-touch-controls="hand: right"></a-entity>
+      </a-entity>
+
+      <a-light type="ambient" intensity="0.6"></a-light>
+    </a-scene>
+  </body>
+</html>

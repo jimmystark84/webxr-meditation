@@ -2,127 +2,103 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Milky Way: Supernova Edition</title>
+    <title>Milky Way: Warp Edition</title>
     <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
+    
     <script>
-      // MASTER CONTROLLER: Handles the Supernova and World State
+      // UNIVERSE ENGINE: Handles Crystal Clusters and Supernova Reset
       AFRAME.registerComponent('universe-engine', {
         init: function () {
           this.colors = [
-            ['#00f2ff', '#7000ff', '#ff007b'], // Neon Nebula
-            ['#ff9d00', '#ff4500', '#ffff00'], // Solar Flare
-            ['#00ff8c', '#0044ff', '#ffffff']  // Deep Sea Space
+            ['#00f2ff', '#7000ff', '#ff007b'], // Neon
+            ['#ff9d00', '#ff4500', '#ffff00'], // Solar
+            ['#00ff8c', '#0044ff', '#ffffff']  // Deep Space
           ];
           this.currentPalette = 0;
           this.generateWorld();
-          
-          // Trigger Supernova every 120 seconds
-          setInterval(() => this.triggerSupernova(), 120000);
+          setInterval(() => this.triggerSupernova(), 90000); // Supernova every 90s
         },
-
         generateWorld: function () {
-          const sceneEl = this.el;
           const palette = this.colors[this.currentPalette];
-          
-          // Clear existing crystals if any
-          const oldCrystals = document.querySelectorAll('.cluster');
-          oldCrystals.forEach(c => c.parentNode.removeChild(c));
+          const old = document.querySelectorAll('.cluster');
+          old.forEach(c => c.parentNode.removeChild(c));
 
-          for (let i = 0; i < 200; i++) {
+          for (let i = 0; i < 180; i++) {
             let cluster = document.createElement('a-entity');
             cluster.classList.add('cluster');
-            
-            for (let j = 0; j < 8; j++) {
+            for (let j = 0; j < 6; j++) {
               let shard = document.createElement('a-cone');
-              shard.setAttribute('radius-bottom', Math.random() * 0.5 + 0.2);
-              shard.setAttribute('height', Math.random() * 5 + 1);
+              shard.setAttribute('radius-bottom', 0.3);
+              shard.setAttribute('height', 2);
               shard.setAttribute('segments-radial', 6);
               shard.setAttribute('rotation', {x: Math.random()*360, y: Math.random()*360, z: Math.random()*360});
-
               let col = palette[Math.floor(Math.random() * palette.length)];
-              shard.setAttribute('material', {
-                color: col, emissive: col, emissiveIntensity: 2,
-                metalness: 1, roughness: 0, transparent: true, opacity: 0.8
-              });
+              shard.setAttribute('material', {color: col, emissive: col, emissiveIntensity: 2, metalness: 1, transparent: true, opacity: 0.8});
               cluster.appendChild(shard);
             }
-
-            cluster.setAttribute('position', {
-              x: (Math.random() - 0.5) * 150,
-              y: (Math.random() - 0.5) * 150,
-              z: (Math.random() * -300)
-            });
-
-            cluster.setAttribute('animation', {
-                property: 'rotation', to: '360 720 360', loop: true, 
-                dur: 10000 + Math.random() * 20000, easing: 'linear'
-            });
-
-            sceneEl.appendChild(cluster);
+            cluster.setAttribute('position', {x: (Math.random()-0.5)*150, y: (Math.random()-0.5)*150, z: (Math.random()*-300)});
+            cluster.setAttribute('animation', {property: 'rotation', to: '360 720 360', loop: true, dur: 20000, easing: 'linear'});
+            this.el.appendChild(cluster);
           }
         },
-
         triggerSupernova: function () {
           const flash = document.querySelector('#flash');
-          // Start the blinding white flash
-          flash.setAttribute('animation', {
-            property: 'material.opacity', from: 0, to: 1, dur: 3000, easing: 'easeInQuad'
-          });
-
+          flash.setAttribute('animation', {property: 'material.opacity', from: 0, to: 1, dur: 2000});
           setTimeout(() => {
-            // Change palette and rebuild while screen is white
             this.currentPalette = (this.currentPalette + 1) % this.colors.length;
             this.generateWorld();
-            
-            // Fade flash back out
-            flash.setAttribute('animation', {
-              property: 'material.opacity', from: 1, to: 0, dur: 5000, easing: 'easeOutQuad'
-            });
-          }, 3500);
+            flash.setAttribute('animation', {property: 'material.opacity', from: 1, to: 0, dur: 4000});
+          }, 2500);
         }
       });
 
-      // Drifting and wrapping logic
-      AFRAME.registerComponent('infinite-vortex', {
-        tick: function () {
-          const cam = document.querySelector('#rig').object3D.position;
-          this.el.childNodes.forEach(c => {
-            if (c.object3D && c.object3D.position.z > cam.z + 20) {
-              c.object3D.position.z = cam.z - 280;
-            }
+      // WARP SPEED: Trigger-based movement
+      AFRAME.registerComponent('warp-speed', {
+        init: function () {
+          const rig = document.querySelector('#rig');
+          const cam = document.querySelector('a-camera');
+          const controllers = document.querySelectorAll('[oculus-touch-controls]');
+          
+          const startWarp = () => {
+            rig.setAttribute('animation', {property: 'position', to: '0 0 -50000', dur: 40000, easing: 'easeInQuad'});
+            cam.setAttribute('animation__fov', {property: 'fov', to: 130, dur: 800});
+          };
+          const stopWarp = () => {
+            rig.setAttribute('animation', {property: 'position', to: '0 0 -5000', dur: 500000, easing: 'easeOutQuad'});
+            cam.setAttribute('animation__fov', {property: 'fov', to: 80, dur: 1500});
+          };
+
+          controllers.forEach(c => {
+            c.addEventListener('triggerdown', startWarp);
+            c.addEventListener('triggerup', stopWarp);
           });
         }
       });
     </script>
   </head>
+
   <body>
-    <a-scene universe-engine infinite-vortex renderer="bloom: true; exposure: 2.0; antialias: true;">
+    <a-scene universe-engine warp-speed renderer="colorManagement: true; exposure: 1.5; bloom: true;">
       
- <a-assets>
-  <img id="milkyway" 
-       src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/60/ESO_-_The_Milky_Way_panorama_%28by%29.jpg/1280px-ESO_-_The_Milky_Way_panorama_%28by%29.jpg" 
-       crossorigin="anonymous">
-</a-assets>
+      <a-assets>
+        <img id="milkyway" src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/60/ESO_-_The_Milky_Way_panorama_%28by%29.jpg/1280px-ESO_-_The_Milky_Way_panorama_%28by%29.jpg" crossorigin="anonymous">
+      </a-assets>
 
-      <a-sphere id="flash" radius="2" material="color: white; shader: flat; side: double; opacity: 0; transparent: true" position="0 1.6 0"></a-sphere>
+      <a-sphere id="flash" radius="0.5" material="color: white; shader: flat; side: double; opacity: 0; transparent: true" position="0 1.6 0"></a-sphere>
 
-<a-sky src="#milkyway" 
-       color="#050510" 
-       rotation="0 -90 0" 
-       animation="property: rotation; to: 0 270 0; dur: 800000; loop: true; easing: linear">
-</a-sky>
+      <a-sky src="#milkyway" rotation="0 -90 0" animation="property: rotation; to: 0 270 0; dur: 900000; loop: true; easing: linear"></a-sky>
 
-      <a-entity animation="property: rotation; to: 0 360 0; dur: 100000; loop: true; easing: linear">
-        <a-stars count="15000" radius="200" color="#fff"></a-stars>
+      <a-entity animation="property: rotation; to: 0 360 360; dur: 200000; loop: true; easing: linear">
+        <a-stars count="10000" radius="200" color="#FFF"></a-stars>
       </a-entity>
 
       <a-entity id="rig" position="0 0 0" animation="property: position; to: 0 0 -5000; dur: 500000; easing: linear">
-        <a-camera look-controls></a-camera>
+        <a-camera look-controls fov="80"></a-camera>
+        <a-entity oculus-touch-controls="hand: left"></a-entity>
+        <a-entity oculus-touch-controls="hand: right"></a-entity>
       </a-entity>
 
-      <a-light type="ambient" intensity="0.5"></a-light>
-      <a-light type="point" intensity="3" position="0 2 -2" color="#fff"></a-light>
-
+      <a-light type="ambient" intensity="0.6"></a-light>
     </a-scene>
   </body>
 </html>

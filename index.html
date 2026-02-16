@@ -2,30 +2,30 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Milky Way: Realistic Asteroids</title>
+    <title>Milky Way: Solid Asteroids</title>
     <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
     <script>
-      // COMPONENT: Creates the "Craters" and rough texture procedurally
-      AFRAME.registerComponent('asteroid-geometry', {
+      // COMPONENT: Procedural Solid Rock Geometry
+      AFRAME.registerComponent('solid-rock', {
         init: function () {
           const mesh = this.el.getObject3D('mesh');
           if (!mesh) return;
 
-          // We grab the vertices of the shape and "perturb" them
           const positionAttribute = mesh.geometry.getAttribute('position');
           const vertex = new THREE.Vector3();
 
+          // We use a "Seed" approach so the rocks stay solid but jagged
           for (let i = 0; i < positionAttribute.count; i++) {
             vertex.fromBufferAttribute(positionAttribute, i);
             
-            // This math creates random "bumps" and "divots" (craters)
-            const noise = (Math.random() - 0.5) * 0.4; 
+            // Stronger, sharper displacement for a "solid" look
+            const noise = (Math.random() - 0.5) * 0.5; 
             vertex.multiplyScalar(1 + noise);
             
             positionAttribute.setXYZ(i, vertex.x, vertex.y, vertex.z);
           }
           positionAttribute.needsUpdate = true;
-          mesh.geometry.computeVertexNormals(); // Fixes the lighting for the new bumps
+          mesh.geometry.computeVertexNormals(); 
         }
       });
 
@@ -37,7 +37,7 @@
 
         tick: function (t, dt) {
           this.timer += dt;
-          if (this.timer >= 60000) { 
+          if (this.timer >= 45000) { // Every 45 seconds for a faster cycle
             this.timer = 0;
             this.triggerSupernova();
           }
@@ -47,41 +47,38 @@
           const sceneEl = this.el;
           document.querySelectorAll('.asteroid').forEach(c => c.parentNode.removeChild(c));
 
-          for (let i = 0; i < 80; i++) {
+          for (let i = 0; i < 90; i++) {
             let rock = document.createElement('a-entity');
             rock.classList.add('asteroid');
             
-            // Use Icosahedron with detail:2 for enough "resolution" to see craters
+            // Detail:1 keeps it "low-poly" and sharp/solid looking
             rock.setAttribute('geometry', {
               primitive: 'icosahedron',
-              radius: Math.random() * 2 + 1,
-              detail: 2 
+              radius: Math.random() * 2 + 0.8,
+              detail: 1 
             });
 
-            // Apply our custom "Crater" math
-            rock.setAttribute('asteroid-geometry', '');
+            rock.setAttribute('solid-rock', '');
 
-            // Material inspired by your image: Dark grey, very rough
+            // LIGHTER COLOUR: Lighter grey/concrete tone to pop against space
             rock.setAttribute('material', {
-              color: '#333333',
-              roughness: 1.0, 
-              metalness: 0.0,
-              sphericalEnvMap: '#milkyway',
-              envMapIntensity: 0.2 // Very subtle star reflections
+              color: '#A9A9A9', 
+              roughness: 0.8, 
+              metalness: 0.2,
+              flatShading: true // This makes the faces look "hard" and solid
             });
 
             rock.setAttribute('position', {
-              x: (Math.random()-0.5)*180, 
+              x: (Math.random()-0.5)*160, 
               y: (Math.random()-0.5)*120, 
               z: (Math.random()*-300)
             });
 
-            // Random tumbling
             rock.setAttribute('animation', {
               property: 'rotation', 
               to: `${Math.random()*360} 360 ${Math.random()*360}`, 
               loop: true, 
-              dur: 50000 + Math.random() * 50000, 
+              dur: 60000 + Math.random() * 40000, 
               easing: 'linear'
             });
 
@@ -91,32 +88,36 @@
 
         triggerSupernova: function () {
           const flash = document.querySelector('#flash');
-          if (!flash) return;
-          flash.setAttribute('animation', {property: 'material.opacity', from: 0, to: 1, dur: 2000});
+          // Fast fade in
+          flash.setAttribute('animation', {property: 'material.opacity', from: 0, to: 1, dur: 1500});
+          
           setTimeout(() => {
             this.generateWorld();
-            flash.setAttribute('animation', {property: 'material.opacity', from: 1, to: 0, dur: 4000});
-          }, 2100);
+            // Slow fade out
+            flash.setAttribute('animation', {property: 'material.opacity', from: 1, to: 0, dur: 3000});
+          }, 1600);
         }
       });
     </script>
   </head>
   <body>
-    <a-scene universe-engine renderer="colorManagement: true; exposure: 1.0;">
+    <a-scene universe-engine renderer="colorManagement: true; exposure: 1.3; antialias: true;">
       <a-assets>
         <img id="milkyway" src="milkyway.jpg" crossorigin="anonymous">
       </a-assets>
 
-      <a-sphere id="flash" radius="15" material="color: white; shader: flat; side: double; opacity: 0; transparent: true" position="0 1.6 0"></a-sphere>
+      <a-sphere id="flash" radius="20" material="color: #ffffff; shader: flat; side: double; opacity: 0; transparent: true" position="0 1.6 0"></a-sphere>
 
       <a-sky src="#milkyway" rotation="0 -90 0"></a-sky>
 
-      <a-entity id="rig" position="0 0 0" animation="property: position; to: 0 0 -10000; dur: 1200000; easing: linear">
+      <a-entity id="rig" position="0 0 0" animation="property: position; to: 0 0 -8000; dur: 1000000; easing: linear">
         <a-camera look-controls fov="80"></a-camera>
+        <a-entity oculus-touch-controls="hand: left"></a-entity>
+        <a-entity oculus-touch-controls="hand: right"></a-entity>
       </a-entity>
 
-      <a-light type="directional" intensity="2.5" position="-10 10 5" target="#rig"></a-light>
-      <a-light type="ambient" intensity="0.1" color="#1a1a33"></a-light>
+      <a-light type="directional" intensity="2.8" position="10 10 10" target="#rig"></a-light>
+      <a-light type="ambient" intensity="0.2" color="#fff"></a-light>
 
     </a-scene>
   </body>
